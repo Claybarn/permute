@@ -14,13 +14,11 @@ from cryptorandom.cryptorandom import SHA256
 from ..multitest_core import (multitest_corr,
                     multitest_spearman_corr,
                     multitest_two_sample,
-                    multitest_two_sample_shift,
-                    multitest_two_sample_conf_int,
                     multitest_one_sample)
 
 
 
-def multitest_test_corr():
+def test_multitest_corr():
     prng = SHA256(42)
     num_tests = 2
     x = prng.randint(0, 5, size=(10,num_tests))
@@ -52,7 +50,7 @@ def multitest_test_corr():
     print("finished test 3 in test_corr()")
 
 
-def multitest_test_spearman_corr():
+def test_multitest_spearman_corr():
     prng = SHA256(42)
     num_tests = 2
     x = (np.array([2, 4, 6, 8, 10])*np.ones((num_tests,5))).T
@@ -70,7 +68,7 @@ def multitest_test_spearman_corr():
 
 
 @pytest.mark.slow
-def multitest_test_two_sample():
+def test_multitest_two_sample():
     prng = RandomState(42)
     num_samples = 200
     num_tests = 2
@@ -111,7 +109,7 @@ def multitest_test_two_sample():
                     case_count += 1
     
 @pytest.mark.slow
-def multitest_test_one_sample():
+def test_multitest_one_sample():
     # same code as multitest_test_two_sample(), but switched tested function to one sample version
     prng = RandomState(42)
     num_samples = 200

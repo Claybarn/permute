@@ -10,6 +10,17 @@ from scipy.stats import ttest_ind
 
 from .utils import get_prng, permute_within_groups
 
+
+def _nan_where_undefined(pvalue, tst):
+    """Tests whose observed statistic is NaN have no defined p-value.
+
+    Without this, ``dist >= nan`` is False for every permutation, which
+    reports the smallest attainable p-value, i.e. a false positive.
+    """
+    pvalue = np.array(pvalue, dtype=float)
+    pvalue[np.isnan(np.asarray(tst, dtype=float))] = np.nan
+    return pvalue
+
 def multitest_stratified_corrcoef(x, y, group):
     r"""
     Calculates sum of Spearman correlations between x and y,
@@ -104,7 +115,7 @@ def multitest_stratified_sim_corr(x, y, group, reps=10**4, alternative='greater'
         'two-sided': lambda p: 2 * np.min([p + plus1/(reps+plus1), 
                                            1 - (p + plus1/(reps+plus1))],axis=0)
     }
-    return thePvalue[alternative](right_pv), tst, dist
+    return _nan_where_undefined(thePvalue[alternative](right_pv), tst), tst, dist
 
 
 def multitest_stratified_permutationtest_mean(group, condition, response,
@@ -117,6 +128,11 @@ def multitest_stratified_permutationtest_mean(group, condition, response,
     difference in means, aggregated across groups.
     If there are more than two treatment conditions, the test statistic
     is the standard deviation of the means, aggregated across groups.
+
+    Groups without observations in every condition are skipped: under
+    within-group permutation they contribute the same (undefined) amount
+    to every permutation, so they carry no information. A test whose
+    responses contain NaN has a NaN statistic.
 
     Parameters
     ----------
@@ -153,23 +169,24 @@ def multitest_stratified_permutationtest_mean(group, condition, response,
     # if 2 conditions, calculate mean. If more than 2, calculate std of outcomes
     # TODO ensure this is intended behavior, in stratified.py this is done 
     # with the variable "groups", but that doesn't seem right to me
-    elif len(conditions) == 2:
+    if len(conditions) == 2:
         stat = lambda u: u[0] - u[1]
-        for g in groups:
-            # create mask for current group
-            gg = group == g
-            # create conjugate mask for group and condition
-            x = [gg & (condition == c) for c in conditions]
-            # aggregate statistic for each group and condition
-            tst += stat([response[x[j],:].mean(axis=0) for j in range(len(x))])
-    elif len(conditions) > 2:
-        for g in groups:
-            # create mask for current group
-            gg = group == g
-            # create conjugate mask for group and condition
-            x = [gg & (condition == c) for c in conditions]
-            # aggregate statistic for each group and condition
-            tst += np.std([response[x[j],:].mean(axis=0) for j in range(len(x))],0)
+    else:
+        stat = lambda u: np.std(u, 0)
+    complete = 0
+    for g in groups:
+        # create mask for current group
+        gg = group == g
+        # create conjugate mask for group and condition
+        x = [gg & (condition == c) for c in conditions]
+        # skip groups missing a condition (their means would be NaN)
+        if not all(np.any(xj) for xj in x):
+            continue
+        complete += 1
+        # aggregate statistic for each group and condition
+        tst += stat([response[x[j],:].mean(axis=0) for j in range(len(x))])
+    if complete == 0:
+        raise ValueError('No group has observations in every condition.')
     return tst
 
 
@@ -290,7 +307,7 @@ def multitest_stratified_permutationtest(
             dist[i,:] = tst_fun(permute_within_groups(condition, group, prng))
         # calculate percentile for each test
         right_pv = np.sum(dist >= tst,axis=0) / (reps+plus1)
-        return thePvalue[alternative](right_pv), tst, dist
+        return _nan_where_undefined(thePvalue[alternative](right_pv), tst), tst, dist
 
 
 def multitest_stratified_two_sample(
@@ -438,7 +455,8 @@ def multitest_stratified_two_sample(
                 response, group, seed=prng))
         # calculate percentile for each test
         hits = np.sum(dist >= observed_tst,axis=0)
-        return thePvalue[alternative](hits / (reps+plus1)), observed_tst, dist
+        return (_nan_where_undefined(thePvalue[alternative](hits / (reps+plus1)), observed_tst),
+                observed_tst, dist)
     else:
         # create vector to store number of times each hypothesis is less
         # than the corresponding statistic of the permuted values
@@ -447,4 +465,4 @@ def multitest_stratified_two_sample(
             # calculate current statistic
             curr_tst = tst_fun(permute_within_groups(response, group, seed=prng))
             hits += curr_tst >= observed_tst
-        return thePvalue[alternative](hits / (reps+plus1)), observed_tst
+        return _nan_where_undefined(thePvalue[alternative](hits / (reps+plus1)), observed_tst), observed_tst
