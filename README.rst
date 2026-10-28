@@ -1,6 +1,15 @@
 Permutation tests and confidence sets
 =====================================
 
+.. note::
+
+   ``permute-multitest`` is a fork of `statlab/permute <https://github.com/statlab/permute>`_
+   maintained by Clayton Barnes. It adds multi-test versions of the permutation tests
+   (``permute.multitest_core`` and ``permute.multitest_stratified``) that test many
+   hypotheses, such as every time point or channel, against one shared permutation
+   distribution. The import name is still ``permute``, so it can't be installed
+   alongside statlab's package. The original authors are credited below.
+
 |PyPI| |Build Status| |Coverage Status|
 
 Permutation tests and confidence sets for a variety of nonparametric

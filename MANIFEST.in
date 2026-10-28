@@ -1,0 +1,3 @@
+include LICENSE README.rst
+include requirements/*.txt
+recursive-include permute/data *.csv

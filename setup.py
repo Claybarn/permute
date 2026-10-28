@@ -5,13 +5,17 @@ Permutation tests and confidence sets for Python
 import os
 
 
-DISTNAME = "permute"
-DESCRIPTION = "Permutation tests and confidence sets for Python"
+DISTNAME = "permute-multitest"
+DESCRIPTION = ("Permutation tests and confidence sets, with stratified multi-test extensions "
+               "(a fork of statlab/permute)")
+# Original authors of statlab/permute; the fork is maintained separately.
 AUTHOR = "K. Jarrod Millman, Kellie Ottoboni, and Philip B. Stark"
 AUTHOR_EMAIL = "permute@googlegroups.com"
-URL = "http://statlab.github.io/permute/"
+MAINTAINER = "Clayton Barnes"
+MAINTAINER_EMAIL = "barnes.clayton@icloud.com"
+URL = "https://github.com/Claybarn/permute"
 LICENSE = "BSD License"
-DOWNLOAD_URL = "http://github.com/statlab/permute"
+DOWNLOAD_URL = "https://github.com/Claybarn/permute"
 VERSION = "0.2.alpha1"
 
 
@@ -45,8 +49,12 @@ if __name__ == "__main__":
         license=LICENSE,
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
+        long_description_content_type="text/x-rst",
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
+        maintainer=MAINTAINER,
+        maintainer_email=MAINTAINER_EMAIL,
+        project_urls={"Upstream": "https://github.com/statlab/permute"},
         url=URL,
         download_url=DOWNLOAD_URL,
         classifiers=[
@@ -56,9 +64,7 @@ if __name__ == "__main__":
             "Intended Audience :: Science/Research",
             "License :: OSI Approved :: BSD License",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 3.7",
-            "Programming Language :: Python :: 3.8",
-            "Programming Language :: Python :: 3.9",
+            "Programming Language :: Python :: 3",
             "Topic :: Scientific/Engineering",
             "Operating System :: Microsoft :: Windows",
             "Operating System :: POSIX",
@@ -67,7 +73,7 @@ if __name__ == "__main__":
         ],
         install_requires=INSTALL_REQUIRES,
         tests_require=TESTS_REQUIRE,
-        python_requires=">=3.7",
+        python_requires=">=3.9",
         packages=["permute", "permute.tests", "permute.data", "permute.data.tests"],
         package_data={"permute.data": ["*.csv", "*/*.csv", "*/*/*.csv"]},
     )
