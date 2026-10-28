@@ -125,3 +125,72 @@ def test_multitest_stratified_two_sample():
     # TODO ensure this is appropriate
     np.testing.assert_almost_equal(res[0], 0.6733, 3)
     np.testing.assert_almost_equal(res[1], -0.2, 3)
+
+
+def _null_design(seed=0, num_tests=3):
+    """Four complete strata (2 + 2 observations per condition) with no effect."""
+    rng = np.random.default_rng(seed)
+    group = np.repeat([1, 2, 3, 4], 4)
+    condition = np.tile([1, 1, 2, 2], 4)
+    response = rng.normal(size=(group.shape[0], num_tests))
+    return group, condition, response
+
+
+def test_multitest_stratified_incomplete_stratum_is_skipped():
+    # A stratum observed in only one condition is uninformative under
+    # within-stratum permutation. It used to make every statistic NaN, and
+    # since NaN >= x is False, every p-value came back at its minimum.
+    group, condition, response = _null_design()
+    p_ref, tst_ref, _ = spt(group, condition, response, alternative='two-sided', reps=500, seed=1)
+    group2 = np.append(group, [9, 9])
+    condition2 = np.append(condition, [1, 1])
+    response2 = np.vstack([response, [[5.0, 5.0, 5.0], [6.0, 6.0, 6.0]]])
+    p, tst, _ = spt(group2, condition2, response2, alternative='two-sided', reps=500, seed=1)
+    assert np.all(np.isfinite(tst))
+    np.testing.assert_allclose(tst, tst_ref)
+    assert np.all(p > 1 / 501 + 1e-12)
+
+
+def test_multitest_stratified_mean_skips_incomplete_strata():
+    group, condition, response = _null_design()
+    full = sptm(group, condition, response)
+    group2 = np.append(group, [9])
+    condition2 = np.append(condition, [2])
+    response2 = np.vstack([response, [[1.0, 1.0, 1.0]]])
+    np.testing.assert_allclose(sptm(group2, condition2, response2), full)
+
+
+def test_multitest_stratified_permutationtest_no_complete_strata():
+    group = np.array([1, 1, 2, 2])
+    condition = np.array([1, 1, 2, 2])
+    response = np.zeros((4, 2))
+    pytest.raises(ValueError, spt, group, condition, response, reps=10)
+
+
+def test_multitest_stratified_nan_response_gives_nan_pvalue():
+    group, condition, response = _null_design()
+    response[0, 1] = np.nan
+    p, tst, _ = spt(group, condition, response, alternative='two-sided', reps=500, seed=1)
+    assert np.isnan(p[1]) and np.isnan(tst[1])
+    assert np.all(np.isfinite(p[[0, 2]]))
+    for alt in ('greater', 'less'):
+        assert np.isnan(spt(group, condition, response, alternative=alt, reps=200, seed=1)[0][1])
+
+
+def test_multitest_stratified_sim_corr_nan_gives_nan_pvalue():
+    rng = np.random.default_rng(2)
+    group = np.repeat([1, 2], 10)
+    x = rng.normal(size=(20, 2))
+    y = rng.normal(size=(20, 2))
+    x[3, 0] = np.nan
+    p, tst, _ = multitest_stratified_sim_corr(x, y, group, reps=200, seed=3)
+    assert np.isnan(p[0]) and np.isfinite(p[1])
+
+
+def test_multitest_stratified_two_sample_nan_gives_nan_pvalue():
+    group, condition, response = _null_design()
+    response[2, 0] = np.nan
+    for keep_dist in (True, False):
+        res = multitest_stratified_two_sample(group, condition, response, stat='mean_within_strata',
+                                              reps=200, keep_dist=keep_dist, seed=4)
+        assert np.isnan(res[0][0]) and np.all(np.isfinite(res[0][1:]))
