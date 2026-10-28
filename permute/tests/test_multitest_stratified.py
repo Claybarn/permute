@@ -10,9 +10,10 @@ from numpy.random import RandomState
 
 import pytest
 
-from ..stratified import multitest_stratified_permutationtest as spt
-from ..stratified import multitest_stratified_permutationtest_mean as sptm
-from ..stratified import multitest_stratified_corrcoef, multitest_stratified_sim_corr, multitest_stratified_two_sample
+from ..multitest_stratified import multitest_stratified_permutationtest as spt
+from ..multitest_stratified import multitest_stratified_permutationtest_mean as sptm
+from ..multitest_stratified import (multitest_stratified_corrcoef, multitest_stratified_sim_corr,
+                                    multitest_stratified_two_sample)
 
 def test_multitest_stratified_permutationtest():
     num_tests = 2
